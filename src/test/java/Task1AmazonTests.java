@@ -10,6 +10,7 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 
 public class Task1AmazonTests {
@@ -20,6 +21,7 @@ public class Task1AmazonTests {
     private WebDriver driver;
     private AmazonHomePage amazonHomePage;
     private WebDriverWait wait;
+    private List<WebElement> searchResults = new ArrayList<>();
 
     @BeforeEach
     public void setUp() {
@@ -36,6 +38,7 @@ public class Task1AmazonTests {
         try {
             test11();
             test12();
+            test13();
         } catch (Exception e) {
             System.err.println("ERROR: " + e.getMessage());
             Assertions.fail("Test FAILED due:" + e.getMessage());
@@ -47,6 +50,18 @@ public class Task1AmazonTests {
 
         // Wait, until the title is 'Amazon'
         wait.until(ExpectedConditions.titleContains("Amazon"));
+
+        // Handle the cookie consent banner if it appears
+        try {
+            WebDriverWait shortWait = new WebDriverWait(driver, Duration.ofSeconds(3));
+            WebElement acceptCookiesBtn = shortWait
+                    .until(ExpectedConditions.elementToBeClickable(By.id("sp-cc-accept")));
+            acceptCookiesBtn.click();
+            // Short pause to allow the banner closing animation to finish
+            Thread.sleep(500);
+        } catch (Exception e) {
+            System.out.println("No cookie banner displayed, proceeding...");
+        }
 
         String pageTitle = driver.getTitle();
 
@@ -60,13 +75,52 @@ public class Task1AmazonTests {
         By result = By.cssSelector("div[data-component-type='s-search-result']");
         wait.until(ExpectedConditions.presenceOfElementLocated(result));
 
-        List<WebElement> searchResults = driver.findElements(result);
+        searchResults = driver.findElements(result);
 
         Assertions.assertTrue(searchResults.size() >= 5,
                 "Expected 5, but found: " + searchResults.size());
 
         printSuccess("Es werden mindestens 5 Schuhe angezeigt (Gefunden: "
                 + searchResults.size() + ")");
+    }
+
+    private void test13() {
+        By resultLocator = By.cssSelector("div[data-component-type='s-search-result']");
+        searchResults = driver.findElements(resultLocator);
+
+        WebElement productLinkToClick = null;
+
+        for (WebElement product : searchResults) {
+            // Check for the sponsored label
+            List<WebElement> sponsoredLabels = product
+                    .findElements(By.cssSelector(".puis-sponsored-label-info-icon, .s-sponsored-label-info-icon"));
+
+            boolean isSponsored = false;
+            for (WebElement label : sponsoredLabels) {
+                if (label.isDisplayed()) {
+                    isSponsored = true;
+                    break;
+                }
+            }
+
+            if (!isSponsored) {
+                List<WebElement> titleElements = product
+                        .findElements(By.cssSelector("a h2, h2 a, h2.a-size-base-plus"));
+
+                if (!titleElements.isEmpty()) {
+                    productLinkToClick = titleElements.getFirst();
+                    break;
+                }
+            }
+        }
+
+        Assertions.assertNotNull(productLinkToClick, "Could not find any unsponsored product on the page");
+        productLinkToClick.click();
+
+        WebElement productName = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("productTitle")));
+        Assertions.assertTrue(productName.isDisplayed(), "Product page did not load correctly");
+
+        printSuccess("Das Produkt wird erfolgreich aufgerufen");
     }
 
     @AfterEach
