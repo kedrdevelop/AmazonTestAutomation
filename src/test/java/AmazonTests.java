@@ -14,7 +14,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Task1AmazonTests {
+public class AmazonTests {
     // ANSI color codes for console output
     private static final String ANSI_GREEN = "\u001B[32m";
     private static final String ANSI_RESET = "\u001B[0m";
@@ -35,7 +35,7 @@ public class Task1AmazonTests {
     }
 
     @Test
-    public void testAmazonStartPageLoads() {
+    public void task1() {
         try {
             test11();
             test12();

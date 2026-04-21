@@ -1,5 +1,6 @@
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 
 public class AmazonHomePage {
     private WebDriver driver;
@@ -12,7 +13,9 @@ public class AmazonHomePage {
     }
 
     public void searchForProduct(String productName) {
-        driver.findElement(searchBox).sendKeys(productName);
-        driver.findElement(searchBox).submit();
+        WebElement input = driver.findElement(searchBox);
+        input.clear();
+        input.sendKeys(productName);
+        input.submit();
     }
 }
