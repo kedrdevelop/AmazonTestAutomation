@@ -27,7 +27,7 @@ public class Task1AmazonTests {
     }
 
     @Test
-    public void amazonStartPageLoads() {
+    public void testAmazonStartPageLoads() {
         try {
             driver.get("https://www.amazon.de/");
 
@@ -45,6 +45,12 @@ public class Task1AmazonTests {
             System.err.println("ERROR: " + e.getMessage());
             Assertions.fail("Test FAILED due:" + e.getMessage());
         }
+    }
+
+
+    @Test
+    public void testAmazonSneakersSearch() {
+
     }
 
     @AfterEach
