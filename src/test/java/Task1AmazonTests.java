@@ -7,6 +7,7 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
@@ -39,6 +40,7 @@ public class Task1AmazonTests {
             test11();
             test12();
             test13();
+            test14();
         } catch (Exception e) {
             System.err.println("ERROR: " + e.getMessage());
             Assertions.fail("Test FAILED due:" + e.getMessage());
@@ -121,6 +123,44 @@ public class Task1AmazonTests {
         Assertions.assertTrue(productName.isDisplayed(), "Product page did not load correctly");
 
         printSuccess("Das Produkt wird erfolgreich aufgerufen");
+    }
+
+    private void test14() {
+        // Check if size selection is a standard dropdown
+        List<WebElement> sizeDropdowns = driver.findElements(By.id("native_dropdown_selected_size_name"));
+        if (!sizeDropdowns.isEmpty()) {
+            Select sizeSelect = new Select(sizeDropdowns.getFirst());
+
+            // Directly locate the first available option using CSS and extract its value
+            WebElement firstAvailable = driver.findElement(By
+                    .cssSelector("#native_dropdown_selected_size_name option.dropdownAvailable"));
+            sizeSelect.selectByValue(firstAvailable.getAttribute("value"));
+
+            // Allow time for the page to dynamically update the color or price based on size
+            try { Thread.sleep(1500); } catch (InterruptedException ignored) {}
+        }
+
+        // Check if size selection consists of button swatches
+        List<WebElement> sizeSwatches = driver.findElements(By.cssSelector("#variation_size_name ul li.swatchAvailable"));
+        if (!sizeSwatches.isEmpty()) {
+            // Click the first available size that isn't out of stock
+            sizeSwatches.getFirst().click();
+            try { Thread.sleep(1500); } catch (InterruptedException ignored) {}
+        }
+
+        WebElement addToCartBtn = wait.until(ExpectedConditions.elementToBeClickable(By.id("add-to-cart-button")));
+        addToCartBtn.click();
+
+        wait.until(d -> {
+            String countText = d.findElement(By.id("nav-cart-count")).getText();
+            try {
+                return Integer.parseInt(countText) > 0;
+            } catch (NumberFormatException e) {
+                return false;
+            }
+        });
+
+        printSuccess("Das Produkt wird erfolgreich dem Einkaufswagen hinzugefügt.");
     }
 
     @AfterEach
