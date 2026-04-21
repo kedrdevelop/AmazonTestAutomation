@@ -183,6 +183,9 @@ public class AmazonTests {
             searchAndAddToCart("Puma Tazon 6");
             searchAndAddToCart("Nike Air Max");
 
+            // Final step - verification
+            verifyCart();
+
         } catch (Exception e) {
             System.err.println("ERROR: " + e.getMessage());
             Assertions.fail("Test Case 2 FAILED due: " + e.getMessage());
@@ -270,6 +273,27 @@ public class AmazonTests {
         } catch (Exception e) {
             return 0;
         }
+    }
+
+    private void verifyCart() {
+        WebElement cartButton = wait.until(ExpectedConditions.elementToBeClickable(By.id("nav-cart")));
+        cartButton.click();
+
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("sc-active-cart")));
+
+        String cartText = driver.findElement(By.id("sc-active-cart")).getText().toLowerCase();
+        Assertions.assertTrue(cartText.contains("adidas")
+                        && cartText.contains("puma")
+                        && cartText.contains("nike"),
+                "Not all products were found in the cart!");
+
+        printSuccess("""
+                
+                Im Einkaufswagen sind die folgenden 3 Produkte zu finden:
+                
+                - Adidas Herren Questar Flow Laufschuhe
+                - Puma Tazon 6
+                - Nike Air Max""");
     }
 
     @AfterEach
