@@ -35,7 +35,7 @@ public class AmazonTests {
     }
 
     @Test
-    public void task1() {
+    public void testCase1() {
         try {
             test11();
             test12();
@@ -161,6 +161,115 @@ public class AmazonTests {
         });
 
         printSuccess("Das Produkt wird erfolgreich dem Einkaufswagen hinzugefügt.");
+    }
+
+    @Test
+    public void testCase2() {
+        try {
+            driver.get("https://www.amazon.de/");
+            wait.until(ExpectedConditions.titleContains("Amazon"));
+
+            try {
+                WebDriverWait shortWait = new WebDriverWait(driver, Duration.ofSeconds(3));
+                WebElement acceptCookiesBtn = shortWait.until(ExpectedConditions.elementToBeClickable(By.id("sp-cc-accept")));
+                acceptCookiesBtn.click();
+                Thread.sleep(500);
+            } catch (Exception e) {
+                System.out.println("No cookie banner displayed, proceeding...");
+            }
+
+            // The reusable methode
+            searchAndAddToCart("Adidas Herren Questar Flow Laufschuhe");
+            searchAndAddToCart("Puma Tazon 6");
+            searchAndAddToCart("Nike Air Max");
+
+        } catch (Exception e) {
+            System.err.println("ERROR: " + e.getMessage());
+            Assertions.fail("Test Case 2 FAILED due: " + e.getMessage());
+        }
+    }
+
+    private void searchAndAddToCart(String productName) {
+        amazonHomePage.searchForProduct(productName);
+
+        // Checking that >= 1 result was found
+        By resultLocator = By.cssSelector("div[data-component-type='s-search-result']");
+        wait.until(ExpectedConditions.presenceOfElementLocated(resultLocator));
+
+        // Save the current number of items in the cart before adding
+        int initialCartCount = getCartCount();
+
+        List<WebElement> searchResults = driver.findElements(resultLocator);
+        Assertions.assertFalse(searchResults.isEmpty(),
+                "Expected at least 1 result for " + productName);
+        printSuccess("Gefunden >= 1 für: " + productName);
+
+        // Selecting the first non-sponsored product (code from test13)
+        WebElement productLinkToClick = null;
+        for (WebElement product : searchResults) {
+            List<WebElement> sponsoredLabels = product
+                    .findElements(By.cssSelector(".puis-sponsored-label-info-icon, .s-sponsored-label-info-icon"));
+            boolean isSponsored = false;
+
+            for (WebElement label : sponsoredLabels) {
+                if (label.isDisplayed()) {
+                    isSponsored = true;
+                    break;
+                }
+            }
+
+            if (!isSponsored) {
+                List<WebElement> titleElements = product
+                        .findElements(By.cssSelector("a h2, h2 a, h2.a-size-base-plus"));
+                if (!titleElements.isEmpty()) {
+                    productLinkToClick = titleElements.getFirst();
+                    break;
+                }
+            }
+        }
+
+        Assertions.assertNotNull(productLinkToClick,
+                "Could not find any unsponsored product for: " + productName);
+        productLinkToClick.click();
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("productTitle")));
+
+        // Select size and add to cart (code from test14)
+        List<WebElement> sizeDropdowns = driver.findElements(By.id("native_dropdown_selected_size_name"));
+        if (!sizeDropdowns.isEmpty()) {
+            Select sizeSelect = new Select(sizeDropdowns.getFirst());
+            WebElement firstAvailable = driver.findElement(
+                    By.cssSelector("#native_dropdown_selected_size_name option.dropdownAvailable"));
+            sizeSelect.selectByValue(firstAvailable.getAttribute("value"));
+
+            try { Thread.sleep(1500); } catch (InterruptedException ignored) {}
+        }
+
+        List<WebElement> sizeSwatches = driver.findElements(
+                By.cssSelector("#variation_size_name ul li.swatchAvailable"));
+        if (!sizeSwatches.isEmpty()) {
+            sizeSwatches.getFirst().click();
+
+            try { Thread.sleep(1500); } catch (InterruptedException ignored) {}
+        }
+
+        WebElement addToCartBtn = wait.until(
+                ExpectedConditions.elementToBeClickable(By.id("add-to-cart-button")));
+        addToCartBtn.click();
+
+        // Check via Lambda to verify,
+        // that the item has been successfully added (the cart count has increased)
+        wait.until(d -> getCartCount() > initialCartCount);
+
+        printSuccess("Das Produkt '" + productName + "' wird erfolgreich im Warenkorb abgelegt");
+    }
+
+    private int getCartCount() {
+        try {
+            String countText = driver.findElement(By.id("nav-cart-count")).getText();
+            return Integer.parseInt(countText);
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
     @AfterEach
